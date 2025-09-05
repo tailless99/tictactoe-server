@@ -8,39 +8,57 @@ var logger = require('morgan');
 var mongodb = require('mongodb');
 var MongoClient = mongodb.MongoClient;
 
-// 세션 설정
-
+// Session 설정
+var session = require('express-session');
+var fileStore = require('session-file-store')(session);
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
 var app = express();
 
+// 세션 설정
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'session-login',
+  resave: false,
+  saveUninitialized: false, // 세션이 필요할 떄만 저장하도록 설정
+  store: new fileStore({
+    path: './sessions', // 세션 파일 저장 경로
+    ttl: 24 * 60 * 60, // 세션 유효 기간 (1일)
+    reapInterval: 60 * 60 // 세션 정리 주기  (1시간)
+  }),
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'prodeuction', // HTTPS 환경에서만 쿠키 전송
+    maxAge: 24 * 60 * 60 * 1000 // 쿠기 유효 기간 (1일)
+  }
+}));
+
 // DB 연결
-async function connetDB() {
+async function connectDB() {
   var databaseUrl = 'mongodb://localhost:27017';
 
   try {
     const database = await MongoClient.connect(databaseUrl, {
-      userNewUrlParser: true,
-      useUnitfiedTopology: true
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
     });
     console.log('Database connected successfully');
     app.set('database', database.db('tictactoe'));
 
     // 연결 종료 처리
-    process.on('SIGINT', async () =>{
+    process.on('SIGINT', async () => {
       await database.close();
       console.log('Database connection closed');
       process.exit(0);
     });
-  } catch (error){
+  } catch (error) {
     console.error('Database connection failed:', error);
     process.exit(1);
   }
 }
 
-ConnectDB().catch(err => {
+connectDB().catch(err => {
   console.error('Failed to connect to the database:' , err);
   process.exit(1);
 });
