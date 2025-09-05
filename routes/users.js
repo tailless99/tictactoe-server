@@ -4,6 +4,12 @@ var bcrypt = require('bcrypt');
 var saltRounds = 10;
 const { ObjectId } = require('mongodb');
 
+var ResponseType = {
+  INVALID_USERNAME: 0,
+  INVALID_PASSWORD: 1,
+  SUCCESS: 2,
+}
+
 /* GET users listing. */
 router.get('/', function(req, res, next) {
   res.send('respond with a resource');
@@ -75,14 +81,14 @@ router.post('/login', async function(req, res, next) {
         req.session.userId = existingUser._id.toString();
         req.session.username = existingUser.username;
         req.session.nickname = existingUser.nickname;
-        res.json({ message : 'Login successful'});
+        res.json({ result : ResponseType.SUCCESS });
       }
       else {
-        res.status(401).json({ message: 'Invalid password.'});
+        res.status(401).json({ result : ResponseType.password });
       }
     }
     else {
-      res.status(401).json({ message: 'User not found.'});
+      res.status(401).json({ result : ResponseType.INVALID_USERNAME });
     }
 
   } catch(error){
