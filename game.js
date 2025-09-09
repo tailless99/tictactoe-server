@@ -20,21 +20,22 @@ module.exports = function(server) {
             var roomId = rooms.shift();
             socket.join(roomId);
             socket.emit('joinRoom', { roomId: roomId });
-            socket.to(roomId).emit('StartGame', { roomId: roomId });
+            socket.to(roomId).emit('startGame', { roomId: roomId });
             socketRooms.set(socket.id, roomId);
         } else {
             var roomId = uuidv4();
             socket.join(roomId);
-            socket.emit('CreateRoom', { roomId: roomId });
+            socket.emit('createRoom', { roomId: roomId });
             rooms.push(roomId);
             socketRooms.set(socket.id, roomId);
         }
 
         // 방을 떠날 때 처리
-        socket.on('leaveRoom', function(data) {
+        socket.on("leaveRoom", function(data) {
+            // var roomId = data.roomId;
             var roomId = data.roomId;
             socket.leave(roomId);
-            socket.emit('exitRoom');
+            socket.emit('exitGame');
             socket.to(roomId).emit('endGame');
 
             // 혼자 들어간 방에서 나갈 때 방 삭제
@@ -49,12 +50,16 @@ module.exports = function(server) {
         });
 
         // 소켓(클라이언트)가 특정 Block을 터치했을 때 처리
-        socket.on('doPlayer', function(playerInfo) {
+        socket.on("doPlayer", function(playerInfo) {
             var roomId = playerInfo.roomId;
             var blockIndex = playerInfo.blockIndex;
 
             console.log('Player action in room: ', roomId, " Block index : ", blockIndex);
             socket.to(roomId).emit('doOpponent', {blockIndex: blockIndex});
+        });
+
+        socket.on("disconnect", (reason) => {
+            console.log('Disconnected: ' + socket.id + ' Reaseon : ' +  reason);
         });
     });
 };
